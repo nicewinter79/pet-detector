@@ -2,3 +2,6 @@ venv/
 runs/
 __pycache__/
 *.pyc
+pet-detector.v1i.yolov11/
+yolo11n.pt
+yolo26n.pt
