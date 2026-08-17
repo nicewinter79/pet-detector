@@ -1,0 +1,9 @@
+services:
+  pet-detector:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - ../runs:/runs
+    environment:
+      - MODEL_PATH=/runs/detect/train/weights/best.pt
