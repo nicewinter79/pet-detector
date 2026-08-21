@@ -108,3 +108,7 @@ After the initial training run, I attempted to improve the weak `cow` and `rabbi
 Part of an ongoing portfolio project moving from image classification
 (CIFAR-10) into object detection, on the way toward building a
 Retrieval-Augmented Generation (RAG) chatbot and broader AI development work.
+
+## Zone Detection (Proof of Concept)
+
+Added `zone_detector.py`, which extends the tracking pipeline with point-in-rectangle geometry to detect when an animal enters or exits a defined zone — the same core technique used in commercial livestock/security systems for pasture-boundary alerts, restricted-area monitoring, or barn-entrance counting. The zone and detections are drawn on an annotated output video (`zone_output.mp4`) for visual verification.
