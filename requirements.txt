@@ -2,4 +2,4 @@ ultralytics
 torch
 torchvision
 streamlit
-pillow
+pillowpandas
