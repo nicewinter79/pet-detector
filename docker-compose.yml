@@ -5,5 +5,7 @@ services:
       - "8501:8501"
     volumes:
       - ../runs:/runs
+      - .:/app
     environment:
       - MODEL_PATH=/runs/detect/train/weights/best.pt
+      - ZONE_LOG_PATH=/app/zone_events.csv

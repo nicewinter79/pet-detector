@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y libgl1 libglib2.0-0 && rm -rf /var/lib/
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY predict.py app_ui.py ./
+COPY predict.py app_ui.py zone_detector.py ./
 
 EXPOSE 8501
 
