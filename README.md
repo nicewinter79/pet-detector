@@ -112,3 +112,24 @@ Retrieval-Augmented Generation (RAG) chatbot and broader AI development work.
 ## Zone Detection (Proof of Concept)
 
 Added `zone_detector.py`, which extends the tracking pipeline with point-in-rectangle geometry to detect when an animal enters or exits a defined zone — the same core technique used in commercial livestock/security systems for pasture-boundary alerts, restricted-area monitoring, or barn-entrance counting. The zone and detections are drawn on an annotated output video (`zone_output.mp4`) for visual verification.
+
+## Augmentation Experiment (v3)
+
+After the v2 retraining attempt made things worse by adding too few images to too few classes, tried a different fix on the original v1 dataset: aggressive data augmentation (rotation, flips, HSV color jitter, mosaic, mixup) instead of new images, to see if amplifying the existing 76 images could help the weak `cow` and `rabbit` classes without needing to source new data.
+
+**Result:** overall mAP50-95 dropped from 0.709 (v1) to 0.534 (v1_augmented) - worse across the board, not just on the weak classes.
+
+| Class | v1 mAP50-95 | v1_augmented mAP50-95 |
+|---|---|---|
+| dog | 0.933 | 0.610 |
+| horse | 0.995 | 0.995 |
+| koala | 0.995 | 0.348 |
+| sheep | 0.995 | 0.995 |
+| cow | 0.196 | 0.196 |
+| rabbit | 0.143 | 0.057 |
+
+**Why this likely happened:** with only 1 cow image and rabbit instances concentrated in just 3 images, there isn't enough underlying variety for augmentation to amplify. Aggressive mosaic/mixup settings instead blend already-scarce images together in ways that appear to confuse the model rather than teach it real-world variation - visible in koala and dog also getting worse, despite already having reasonable image counts.
+
+**Takeaway:** augmentation is not a substitute for real data diversity when the underlying dataset is this small. The fix for the weak classes has to be sourcing genuinely new cow and rabbit images (10-15+ each), not stretching the few that exist.
+
+**Decision:** kept v1 (`runs/detect/train`) as the production model. v1_augmented preserved for reference only, not promoted.
