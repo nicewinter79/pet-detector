@@ -1,5 +1,5 @@
-"""
-app_ui.py — Streamlit dashboard for the pet-detector YOLO model.
+﻿"""
+app_ui.py - Streamlit dashboard for the pet-detector YOLO model.
 Run with: streamlit run app_ui.py
 """
 
@@ -12,6 +12,8 @@ import pandas as pd
 import streamlit as st
 from PIL import Image
 from ultralytics import YOLO
+
+from zone_analysis import detect_rapid_crossing
 
 MODEL_PATH = os.environ.get("MODEL_PATH", "weights/best.pt")
 ZONE_LOG_PATH = os.environ.get("ZONE_LOG_PATH", "zone_events.csv")
@@ -35,12 +37,6 @@ def run_detection(model, image_path: str, conf: float):
 
 
 def load_events(log_path: str) -> pd.DataFrame:
-    """Read the zone_detector.py event log CSV into a DataFrame.
-
-    Not cached with @st.cache_data since the CSV can change between runs
-    of zone_detector.py and this file is small enough that re-reading it
-    on every rerun/refresh is cheap.
-    """
     path = Path(log_path)
     if not path.exists():
         return pd.DataFrame(columns=["timestamp", "frame_num", "video_source", "class_name", "track_id", "event", "zone_id"])
@@ -87,17 +83,25 @@ def render_zone_events_tab():
 
     st.subheader("Summary")
     summary = (
-        events.groupby(["class_name", "event"])
+        events.groupby(["zone_id", "class_name", "event"])
         .size()
         .reset_index(name="count")
-        .sort_values(["class_name", "event"])
+        .sort_values(["zone_id", "class_name", "event"])
     )
     cols = st.columns(len(summary)) if len(summary) <= 6 else None
     if cols:
         for col, row in zip(cols, summary.itertuples()):
-            col.metric(f"{row.class_name} {row.event}", row.count)
+            col.metric(f"{row.zone_id}: {row.class_name} {row.event}", row.count)
     else:
         st.dataframe(summary, use_container_width=True, hide_index=True)
+
+    st.subheader("Unusual Activity")
+    flagged = detect_rapid_crossing(events)
+    if flagged.empty:
+        st.success("No unusual activity detected.")
+    else:
+        st.warning(f"{len(flagged)} rapid zone-crossing incident(s) detected - possible pacing or agitation.")
+        st.dataframe(flagged, use_container_width=True, hide_index=True)
 
     st.subheader("All events")
     st.dataframe(
@@ -127,3 +131,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
