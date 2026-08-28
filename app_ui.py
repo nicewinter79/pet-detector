@@ -13,7 +13,7 @@ import streamlit as st
 from PIL import Image
 from ultralytics import YOLO
 
-from zone_analysis import detect_rapid_crossing
+from zone_analysis import detect_rapid_crossing, calculate_dwell_times
 
 MODEL_PATH = os.environ.get("MODEL_PATH", "weights/best.pt")
 ZONE_LOG_PATH = os.environ.get("ZONE_LOG_PATH", "zone_events.csv")
@@ -103,6 +103,21 @@ def render_zone_events_tab():
         st.warning(f"{len(flagged)} rapid zone-crossing incident(s) detected - possible pacing or agitation.")
         st.dataframe(flagged, use_container_width=True, hide_index=True)
 
+    st.subheader("Dwell Time")
+    dwell = calculate_dwell_times(events)
+    if dwell.empty:
+        st.info("No completed or ongoing visits yet.")
+    else:
+        ongoing = dwell[dwell["status"] == "ongoing"]
+        completed = dwell[dwell["status"] == "completed"]
+        if not ongoing.empty:
+            st.write(f"**{len(ongoing)} animal(s) currently inside a zone:**")
+            st.dataframe(ongoing, use_container_width=True, hide_index=True)
+        if not completed.empty:
+            avg_dwell = completed["dwell_seconds"].mean()
+            st.write(f"**Average completed visit:** {avg_dwell:.1f} seconds")
+            st.dataframe(completed, use_container_width=True, hide_index=True)
+
     st.subheader("All events")
     st.dataframe(
         events.sort_values("timestamp", ascending=False),
@@ -112,8 +127,8 @@ def render_zone_events_tab():
 
 
 def main():
-    st.set_page_config(page_title="Pet Detector", page_icon="🐾", layout="centered")
-    st.title("🐾 Pet Detector")
+    st.set_page_config(page_title="Pet Detector", page_icon="\U0001F43E", layout="centered")
+    st.title("\U0001F43E Pet Detector")
 
     if not Path(MODEL_PATH).exists():
         st.error(f"Model weights not found at `{MODEL_PATH}`.")
@@ -131,4 +146,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

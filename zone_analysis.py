@@ -57,3 +57,55 @@ def detect_rapid_crossing(events: pd.DataFrame, window_seconds: int = 10, min_cr
                 i += 1
 
     return pd.DataFrame(flagged) if flagged else empty_result
+
+
+def calculate_dwell_times(events: pd.DataFrame) -> pd.DataFrame:
+    empty_result = pd.DataFrame(columns=[
+        "video_source", "track_id", "zone_id", "class_name",
+        "entered_at", "exited_at", "dwell_seconds", "status",
+    ])
+
+    if events.empty:
+        return empty_result
+
+    events = events.copy()
+    events["timestamp"] = pd.to_datetime(events["timestamp"])
+
+    visits = []
+    group_cols = ["video_source", "track_id", "zone_id"]
+
+    for (video_source, track_id, zone_id), group in events.groupby(group_cols):
+        group = group.sort_values("timestamp").reset_index(drop=True)
+        class_name = group["class_name"].iloc[0]
+
+        pending_entry = None
+        for _, row in group.iterrows():
+            if row["event"] == "ENTERED":
+                pending_entry = row["timestamp"]
+            elif row["event"] == "EXITED" and pending_entry is not None:
+                dwell_seconds = (row["timestamp"] - pending_entry).total_seconds()
+                visits.append({
+                    "video_source": video_source,
+                    "track_id": track_id,
+                    "zone_id": zone_id,
+                    "class_name": class_name,
+                    "entered_at": pending_entry,
+                    "exited_at": row["timestamp"],
+                    "dwell_seconds": dwell_seconds,
+                    "status": "completed",
+                })
+                pending_entry = None
+
+        if pending_entry is not None:
+            visits.append({
+                "video_source": video_source,
+                "track_id": track_id,
+                "zone_id": zone_id,
+                "class_name": class_name,
+                "entered_at": pending_entry,
+                "exited_at": None,
+                "dwell_seconds": None,
+                "status": "ongoing",
+            })
+
+    return pd.DataFrame(visits) if visits else empty_result
